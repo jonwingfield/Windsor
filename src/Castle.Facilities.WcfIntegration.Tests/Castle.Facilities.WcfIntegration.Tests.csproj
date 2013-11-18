@@ -138,6 +138,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Client\AsyncChannelFactoryFixture.cs" />
+    <Compile Include="Client\WcfClientFixture.cs" />
+    <Compile Include="Components\CacheInterceptor.cs" />
     <Compile Include="Service\DataService\DataServiceHostFactoryFixture.cs" />
     <Compile Include="ExceptionsTestCase.cs" />
     <Compile Include="IssuesTestCase.cs" />
@@ -186,7 +188,6 @@
     <Compile Include="Service\Rest\RestServiceFixture.cs" />
     <Compile Include="Components\ServiceWithSession.cs" />
     <Compile Include="Components\Two.cs" />
-    <Compile Include="Client\WcfClientFixture.cs" />
     <Compile Include="Components\IOperations.cs" />
     <Compile Include="Components\Operations.cs" />
     <Compile Include="Service\ServiceHostFactoryFixture.cs" />

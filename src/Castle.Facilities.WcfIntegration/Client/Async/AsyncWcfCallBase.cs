@@ -17,26 +17,21 @@ namespace Castle.Facilities.WcfIntegration.Async
 	using System;
 	using System.Threading;
 	using Castle.DynamicProxy;
+	using Castle.Facilities.WcfIntegration.Internal;
 
-	public abstract class AsyncWcfCallBase<TProxy> : IWcfAsyncBindings
+    public abstract class AsyncWcfCallBase<TProxy> : IWcfAsyncBindings
 	{
 		private readonly TProxy proxy;
-		private readonly Action<TProxy> onBegin;
 		private readonly WcfRemotingAsyncInterceptor wcfAsyncInterceptor;
-		private AsyncWcfCallContext context;
+		protected AsyncWcfCallContext context;
 		protected object[] outArguments;
 		protected object[] unboundOutArguments;
 
-		public AsyncWcfCallBase(TProxy proxy, Action<TProxy> onBegin)
+		public AsyncWcfCallBase(TProxy proxy)
 		{
 			if (proxy == null)
 			{
 				throw new ArgumentNullException("proxy");
-			}
-
-			if (onBegin == null)
-			{
-				throw new ArgumentNullException("onBegin");
 			}
 
 			if ((proxy is IProxyTargetAccessor) == false)
@@ -47,9 +42,10 @@ namespace Castle.Facilities.WcfIntegration.Async
 			}
 
 			this.proxy = proxy;
-			this.onBegin = onBegin;
 			wcfAsyncInterceptor = GetAsyncInterceptor(proxy);
 		}
+
+        protected abstract void OnBegin(TProxy proxy);
 
 		public object[] OutArgs
 		{
@@ -118,7 +114,16 @@ namespace Castle.Facilities.WcfIntegration.Async
 		internal IAsyncResult Begin(AsyncCallback callback, object state)
 		{
 			context = wcfAsyncInterceptor.PrepareCall(WrapCallback(callback), state, proxy, GetDefaultReturnValue());
-			onBegin(proxy);
+			OnBegin(proxy);
+
+            // WrapCallback sets the AsyncResult. However, if it wasn't set, a user interceptor may have never called proceed,
+            // lets assume that's the case and just indicated that we completed synchronously
+		    if (context.AsyncResult == null)
+		    {
+		        wcfAsyncInterceptor.CompletedSynchronously();
+		        context.AsyncResult = new CompletedSynchronouslyAsyncResult();
+		    }
+
 			return context.AsyncResult;
 		}
 

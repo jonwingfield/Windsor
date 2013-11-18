@@ -16,6 +16,7 @@ namespace Castle.Facilities.WcfIntegration
 {
 	using System;
 	using Castle.Facilities.WcfIntegration.Async;
+    using System.Threading.Tasks;
 
 	public static class WcfAsync
 	{
@@ -73,7 +74,47 @@ namespace Castle.Facilities.WcfIntegration
 			return call;
 		}
 
-		/// <summary>
+        /// <summary>
+        /// Makes the wcf call specified by method asynchronously, and returns a task that can be awaited
+        /// </summary>
+        /// <typeparam name="TProxy">The type of the proxy.</typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="method">The delegate encapsulating the invocation of the method.</param>
+        /// <returns>A task representing async execution</returns>
+        public static Task<TResult> WcfAsyncCall<TProxy, TResult>(
+            this TProxy proxy, Func<TProxy, TResult> method)
+        {
+            return proxy.WcfAsyncCall<TProxy, TResult>(method, TaskCreationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+        }
+
+        /// <summary>
+        /// Makes the wcf call specified by method asynchronously, and returns a task that can be awaited
+        /// </summary>
+        /// <typeparam name="TProxy">The type of the proxy.</typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="method">The delegate encapsulating the invocation of the method.</param>
+        /// <param name="creationOptions">Creation options for the task</param>
+        /// <param name="scheduler">The scheduler to use.  Allows synchronization of the task.</param>
+        /// <returns>A task representing async execution</returns>
+        public static Task<TResult> WcfAsyncCall<TProxy, TResult>(
+            this TProxy proxy, Func<TProxy, TResult> method, TaskCreationOptions creationOptions, TaskScheduler scheduler)
+        {
+            var asyncCall = new AsyncWcfCall<TProxy, TResult>(proxy, method);
+            var result = asyncCall.Begin(ar => Nothing(ar), null);
+
+            if (result == null)
+            {
+                var completionSource = new TaskCompletionSource<TResult>();
+                completionSource.SetResult(asyncCall.End());
+                return completionSource.Task;
+            }
+
+            return Task.Factory.FromAsync<TResult>(result, ar => asyncCall.End(), creationOptions, scheduler);
+        }
+
+        /// <summary>
 		/// Ends the asynchronous call and returns the result.
 		/// </summary>
 		/// <typeparam name="TResult">The result type.</typeparam>

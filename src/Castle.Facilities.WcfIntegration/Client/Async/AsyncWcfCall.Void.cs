@@ -18,9 +18,11 @@ namespace Castle.Facilities.WcfIntegration.Async
 
 	public class AsyncWcfCall<TProxy> : AsyncWcfCallBase<TProxy>, IWcfAsyncCall
 	{
+        private readonly Action<TProxy> func;
 		public AsyncWcfCall(TProxy proxy, Action<TProxy> func)
-			: base(proxy, func)
+			: base(proxy)
 		{
+            this.func = func;
 		}
 
 		public void End()
@@ -72,5 +74,10 @@ namespace Castle.Facilities.WcfIntegration.Async
 		{
 			return null;
 		}
-	}
+
+        protected override void OnBegin(TProxy proxy)
+        {
+            func(proxy);
+        }
+    }
 }

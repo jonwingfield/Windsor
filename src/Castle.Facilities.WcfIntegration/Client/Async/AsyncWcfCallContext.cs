@@ -50,6 +50,10 @@ namespace Castle.Facilities.WcfIntegration.Async
 		{
 			beginMethod = asyncType.GetBeginMethod(method);
 			EndMethod = asyncType.GetEndMethod(method);
+
+            if (beginMethod == null) 
+                throw new ApplicationException("Something is wrong with WcfRemotingAsyncInterceptor.callContext. Make sure that async calls that complete synchronously always clear that variable.");
+
 			syncArguments = arguments;
 		}
 

@@ -26,6 +26,9 @@ namespace Castle.Facilities.WcfIntegration.Async
 	{
 		private readonly AsyncType asyncType;
 
+        /// <summary>
+        /// Relies on the fact that an async wcf call starts on the same thread that the wrapper WcfAsyncCall was called on. 
+        /// </summary>
 		[ThreadStatic]
 		private static AsyncWcfCallContext callContext;
 
@@ -98,5 +101,10 @@ namespace Castle.Facilities.WcfIntegration.Async
 			outs = message.OutArgs;
 			return returnMessage;
 		}
-	}
+
+        internal void CompletedSynchronously()
+        {
+            callContext = null;
+        }
+    }
 }

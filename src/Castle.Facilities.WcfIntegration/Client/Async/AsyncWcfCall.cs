@@ -16,11 +16,16 @@ namespace Castle.Facilities.WcfIntegration.Async
 {
 	using System;
 
-	public class AsyncWcfCall<TProxy, TResult> : AsyncWcfCallBase<TProxy>, IWcfAsyncCall<TResult>, IWcfAsyncCall
+	using Castle.Facilities.WcfIntegration.Internal;
+
+    public class AsyncWcfCall<TProxy, TResult> : AsyncWcfCallBase<TProxy>, IWcfAsyncCall<TResult>, IWcfAsyncCall
 	{
-		public AsyncWcfCall(TProxy proxy, Func<TProxy, TResult> func)
-			: base(proxy, p => func(p))
+        private readonly Func<TProxy, TResult> func;
+		
+        public AsyncWcfCall(TProxy proxy, Func<TProxy, TResult> func)
+			: base(proxy)
 		{
+            this.func = func;
 		}
 
 		public TResult End()
@@ -99,6 +104,12 @@ namespace Castle.Facilities.WcfIntegration.Async
 
 		private TResult InternalEnd()
 		{
+            if (Result != null && context.AsyncResult is CompletedSynchronouslyAsyncResult)
+            {
+                outArguments = new object[0];
+                return Result;
+            }
+
 			TResult result = default(TResult);
 			End((i, c) => { result = i.EndCall<TResult>(c, out outArguments); });
 			return result;
@@ -108,5 +119,12 @@ namespace Castle.Facilities.WcfIntegration.Async
 		{
 			return default(TResult);
 		}
-	}
+
+        protected override void OnBegin(TProxy proxy)
+        {
+            Result = func(proxy);
+        }
+
+        private TResult Result { get; set; }
+    }
 }
