@@ -15,6 +15,7 @@
 namespace Castle.Facilities.WcfIntegration.Async
 {
 	using System;
+	using System.Runtime.Remoting.Messaging;
 
 	using Castle.Facilities.WcfIntegration.Internal;
 
@@ -107,11 +108,13 @@ namespace Castle.Facilities.WcfIntegration.Async
             if (Result != null && context.AsyncResult is CompletedSynchronouslyAsyncResult)
             {
                 outArguments = new object[0];
+                if (_onEnd != null) _onEnd(Result);
                 return Result;
             }
 
 			TResult result = default(TResult);
 			End((i, c) => { result = i.EndCall<TResult>(c, out outArguments); });
+		    if (_onEnd != null) _onEnd(result);
 			return result;
 		}
 
@@ -122,7 +125,15 @@ namespace Castle.Facilities.WcfIntegration.Async
 
         protected override void OnBegin(TProxy proxy)
         {
+            // HACK: save a callback for interceptors to use if they actually want the real result from an async call
+            CallContext.SetData("OnAsyncWcfCallEnd", new Action<Action<object>>(OnEnd));
             Result = func(proxy);
+        }
+
+        private Action<object> _onEnd; 
+        private void OnEnd(Action<object> onEndAction)
+        {
+            _onEnd = onEndAction;
         }
 
         private TResult Result { get; set; }
